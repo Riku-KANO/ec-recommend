@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECレコメンドシステム ER図</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .diagram-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .mermaid {
+            text-align: center;
+        }
+        .description {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ECレコメンドシステム データベース設計</h1>
+    
+    <div class="description">
+        <h2>概要</h2>
+        <p>このER図は、ECレコメンドシステムの主要なエンティティとその関係を示しています。</p>
+        <ul>
+            <li><strong>PostgreSQL</strong>: トランザクショナルデータ（ユーザー、商品、注文など）</li>
+            <li><strong>DynamoDB</strong>: セッション、カート、ユーザー活動などの高速アクセスデータ</li>
+            <li><strong>OpenSearch</strong>: 商品検索とログ分析</li>
+        </ul>
+    </div>
+
+    <div class="diagram-container">
+        <h2>PostgreSQL ER図</h2>
+        <div class="mermaid">
+erDiagram
+    users ||--o{ user_profiles : has
+    users ||--o{ addresses : has
+    users ||--o{ orders : places
+    users ||--o{ reviews : writes
+    users ||--o{ favorites : has
+    
+    sellers ||--o{ products : sells
+    sellers ||--o{ seller_reviews : receives
+    sellers ||--|| seller_profiles : has
+    
+    products ||--o{ product_images : has
+    products ||--o{ product_variations : has
+    products ||--o{ order_items : included_in
+    products ||--o{ reviews : receives
+    products ||--o{ favorites : favorited
+    products }o--|| categories : belongs_to
+    products }o--|| brands : belongs_to
+    
+    orders ||--o{ order_items : contains
+    orders ||--|| order_payments : has
+    orders ||--o{ order_status_histories : has
+    orders }o--|| addresses : ships_to
+    
+    categories ||--o{ categories : has_subcategories
+
+    users {
+        uuid id PK "Cognito User ID"
+        string email UK
+        string phone_number
+        timestamp created_at
+    }
+    
+    user_profiles {
+        uuid id PK
+        uuid user_id FK
+        string display_name
+        date birth_date
+        jsonb preferences
+    }
+    
+    addresses {
+        uuid id PK
+        uuid user_id FK
+        string postal_code
+        string prefecture
+        string city
+        boolean is_default
+    }
+    
+    sellers {
+        uuid id PK
+        string company_name
+        string email UK
+        enum status
+        decimal commission_rate
+    }
+    
+    products {
+        uuid id PK
+        uuid seller_id FK
+        string sku UK
+        string name
+        decimal base_price
+        integer stock_quantity
+        enum status
+    }
+    
+    orders {
+        uuid id PK
+        string order_number UK
+        uuid user_id FK
+        decimal total_amount
+        enum status
+        timestamp ordered_at
+    }
+    
+    reviews {
+        uuid id PK
+        uuid user_id FK
+        uuid product_id FK
+        integer rating
+        text comment
+    }
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>DynamoDBテーブル構成</h2>
+        <div class="mermaid">
+graph TD
+    subgraph DynamoDB
+        Sessions[Sessions Table<br/>PK: session_id<br/>TTL: expires_at]
+        Carts[Carts Table<br/>PK: user_id<br/>SK: product_id<br/>TTL: expires_at]
+        UserPreferences[UserPreferences Table<br/>PK: user_id]
+        UserActivities[UserActivities Table<br/>PK: user_id<br/>SK: timestamp<br/>GSI: activity_type]
+    end
+    
+    subgraph Users
+        U1[User 1]
+        U2[User 2]
+    end
+    
+    U1 --> Sessions
+    U1 --> Carts
+    U1 --> UserPreferences
+    U1 --> UserActivities
+    
+    U2 --> Sessions
+    U2 --> Carts
+    U2 --> UserPreferences
+    U2 --> UserActivities
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>マイクロサービスとデータベースの関係</h2>
+        <div class="mermaid">
+graph LR
+    subgraph Microservices
+        US[User Service]
+        PS[Product Service]
+        OS[Order Service]
+        RS[Review Service]
+        CS[Cart Service]
+        AS[Analytics Service]
+        SS[Search Service]
+    end
+    
+    subgraph Databases
+        PG[(PostgreSQL)]
+        DD[(DynamoDB)]
+        ES[(OpenSearch)]
+    end
+    
+    US --> PG
+    PS --> PG
+    OS --> PG
+    RS --> PG
+    CS --> DD
+    AS --> DD
+    SS --> ES
+    
+    PS -.-> ES
+    AS -.-> ES
+        </div>
+    </div>
+
+    <div class="description">
+        <h2>主要な設計ポイント</h2>
+        <ul>
+            <li><strong>認証</strong>: AWS Cognitoと連携し、users.cognito_user_idで紐付け</li>
+            <li><strong>マルチテナント</strong>: sellersテーブルで複数の販売業者をサポート</li>
+            <li><strong>在庫管理</strong>: 商品バリエーション（サイズ、色など）に対応</li>
+            <li><strong>レビュー</strong>: 商品レビューと業者レビューを分離</li>
+            <li><strong>パフォーマンス</strong>: 適切なインデックス設計とキャッシュ戦略</li>
+            <li><strong>拡張性</strong>: JSONBフィールドで柔軟な属性管理</li>
+        </ul>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#f0f0f0',
+                primaryBorderColor: '#333',
+                primaryTextColor: '#333',
+                lineColor: '#333',
+                secondaryColor: '#e0e0e0',
+                tertiaryColor: '#d0d0d0'
+            }
+        });
+    </script>
+</body>
+</html>

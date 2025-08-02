@@ -1,0 +1,395 @@
+# API Gateway Routes Configuration
+
+api_version: v1
+base_path: /api/v1
+
+# グローバル設定
+global:
+  rate_limiting:
+    enabled: true
+    default_limit: 1000
+    window: 60s
+  cors:
+    enabled: true
+    allowed_origins:
+      - http://localhost:3000
+      - https://ec-recommend.com
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - Authorization
+      - Content-Type
+      - X-Request-ID
+  timeout: 30s
+
+# ルート定義
+routes:
+  # 認証関連
+  - path: /auth/register
+    method: POST
+    service: cognito
+    auth_required: false
+    description: "新規ユーザー登録"
+    
+  - path: /auth/login
+    method: POST
+    service: cognito
+    auth_required: false
+    description: "ユーザーログイン"
+    
+  - path: /auth/logout
+    method: POST
+    service: cognito
+    auth_required: true
+    description: "ログアウト"
+    
+  - path: /auth/refresh
+    method: POST
+    service: cognito
+    auth_required: false
+    description: "トークンリフレッシュ"
+
+  # ユーザー管理
+  - path: /users/me
+    method: GET
+    service: user-service
+    auth_required: true
+    description: "現在のユーザー情報取得"
+    
+  - path: /users/me
+    method: PUT
+    service: user-service
+    auth_required: true
+    description: "ユーザー情報更新"
+    
+  - path: /users/me/profile
+    method: GET
+    service: user-service
+    auth_required: true
+    description: "ユーザープロファイル取得"
+    
+  - path: /users/me/profile
+    method: PUT
+    service: user-service
+    auth_required: true
+    description: "ユーザープロファイル更新"
+    
+  - path: /users/me/addresses
+    method: GET
+    service: user-service
+    auth_required: true
+    description: "アドレス一覧取得"
+    
+  - path: /users/me/addresses
+    method: POST
+    service: user-service
+    auth_required: true
+    description: "アドレス追加"
+    
+  - path: /users/me/addresses/{address_id}
+    method: PUT
+    service: user-service
+    auth_required: true
+    description: "アドレス更新"
+    
+  - path: /users/me/addresses/{address_id}
+    method: DELETE
+    service: user-service
+    auth_required: true
+    description: "アドレス削除"
+
+  # 商品管理（公開）
+  - path: /products
+    method: GET
+    service: product-service
+    auth_required: false
+    cache:
+      enabled: true
+      ttl: 300s
+    description: "商品一覧取得"
+    
+  - path: /products/{product_id}
+    method: GET
+    service: product-service
+    auth_required: false
+    cache:
+      enabled: true
+      ttl: 300s
+    description: "商品詳細取得"
+    
+  - path: /products/categories
+    method: GET
+    service: product-service
+    auth_required: false
+    cache:
+      enabled: true
+      ttl: 3600s
+    description: "カテゴリ一覧取得"
+
+  # 商品管理（販売者）
+  - path: /seller/products
+    method: GET
+    service: product-service
+    auth_required: true
+    roles: [seller]
+    description: "販売者の商品一覧"
+    
+  - path: /seller/products
+    method: POST
+    service: product-service
+    auth_required: true
+    roles: [seller]
+    description: "商品登録"
+    
+  - path: /seller/products/{product_id}
+    method: PUT
+    service: product-service
+    auth_required: true
+    roles: [seller]
+    description: "商品更新"
+    
+  - path: /seller/products/{product_id}/stock
+    method: PUT
+    service: product-service
+    auth_required: true
+    roles: [seller]
+    description: "在庫更新"
+
+  # 注文管理（購入者）
+  - path: /orders
+    method: GET
+    service: order-service
+    auth_required: true
+    description: "注文履歴取得"
+    
+  - path: /orders
+    method: POST
+    service: order-service
+    auth_required: true
+    description: "注文作成"
+    
+  - path: /orders/{order_id}
+    method: GET
+    service: order-service
+    auth_required: true
+    description: "注文詳細取得"
+    
+  - path: /orders/{order_id}/cancel
+    method: POST
+    service: order-service
+    auth_required: true
+    description: "注文キャンセル"
+
+  # 注文管理（販売者）
+  - path: /seller/orders
+    method: GET
+    service: order-service
+    auth_required: true
+    roles: [seller]
+    description: "販売者の注文一覧"
+    
+  - path: /seller/orders/{order_id}/status
+    method: PUT
+    service: order-service
+    auth_required: true
+    roles: [seller]
+    description: "注文ステータス更新"
+
+  # カート管理
+  - path: /cart
+    method: GET
+    service: cart-service
+    auth_required: true
+    description: "カート内容取得"
+    
+  - path: /cart/items
+    method: POST
+    service: cart-service
+    auth_required: true
+    description: "カートに商品追加"
+    
+  - path: /cart/items/{product_id}
+    method: PUT
+    service: cart-service
+    auth_required: true
+    description: "カート内商品数量更新"
+    
+  - path: /cart/items/{product_id}
+    method: DELETE
+    service: cart-service
+    auth_required: true
+    description: "カートから商品削除"
+    
+  - path: /cart/clear
+    method: DELETE
+    service: cart-service
+    auth_required: true
+    description: "カートクリア"
+
+  # 検索
+  - path: /search/products
+    method: GET
+    service: search-service
+    auth_required: false
+    rate_limit:
+      limit: 100
+      window: 60s
+    description: "商品検索"
+    
+  - path: /search/suggest
+    method: GET
+    service: search-service
+    auth_required: false
+    rate_limit:
+      limit: 300
+      window: 60s
+    description: "検索サジェスト"
+
+  # レコメンド
+  - path: /recommendations/homepage
+    method: GET
+    service: recommendation-service
+    auth_required: false
+    cache:
+      enabled: true
+      ttl: 600s
+    description: "ホームページレコメンド"
+    
+  - path: /recommendations/product/{product_id}
+    method: GET
+    service: recommendation-service
+    auth_required: false
+    cache:
+      enabled: true
+      ttl: 600s
+    description: "商品詳細ページレコメンド"
+    
+  - path: /recommendations/cart
+    method: GET
+    service: recommendation-service
+    auth_required: true
+    description: "カートベースレコメンド"
+
+  # お気に入り
+  - path: /favorites
+    method: GET
+    service: user-service
+    auth_required: true
+    description: "お気に入り一覧"
+    
+  - path: /favorites/{product_id}
+    method: POST
+    service: user-service
+    auth_required: true
+    description: "お気に入り追加"
+    
+  - path: /favorites/{product_id}
+    method: DELETE
+    service: user-service
+    auth_required: true
+    description: "お気に入り削除"
+
+  # レビュー
+  - path: /products/{product_id}/reviews
+    method: GET
+    service: review-service
+    auth_required: false
+    description: "商品レビュー一覧"
+    
+  - path: /products/{product_id}/reviews
+    method: POST
+    service: review-service
+    auth_required: true
+    description: "レビュー投稿"
+    
+  - path: /reviews/{review_id}
+    method: PUT
+    service: review-service
+    auth_required: true
+    description: "レビュー更新"
+    
+  - path: /reviews/{review_id}
+    method: DELETE
+    service: review-service
+    auth_required: true
+    description: "レビュー削除"
+
+  # 管理者向けAPI
+  - path: /admin/users
+    method: GET
+    service: user-service
+    auth_required: true
+    roles: [admin]
+    description: "ユーザー一覧（管理者）"
+    
+  - path: /admin/sellers
+    method: GET
+    service: seller-service
+    auth_required: true
+    roles: [admin]
+    description: "販売者一覧（管理者）"
+    
+  - path: /admin/sellers/{seller_id}/approve
+    method: POST
+    service: seller-service
+    auth_required: true
+    roles: [admin]
+    description: "販売者承認"
+    
+  - path: /admin/analytics/dashboard
+    method: GET
+    service: analytics-service
+    auth_required: true
+    roles: [admin]
+    description: "分析ダッシュボード"
+
+# サービス定義
+services:
+  user-service:
+    host: user-service.internal
+    port: 50051
+    protocol: grpc
+    
+  product-service:
+    host: product-service.internal
+    port: 50052
+    protocol: grpc
+    
+  order-service:
+    host: order-service.internal
+    port: 50053
+    protocol: grpc
+    
+  cart-service:
+    host: cart-service.internal
+    port: 50054
+    protocol: grpc
+    
+  search-service:
+    host: search-service.internal
+    port: 50055
+    protocol: grpc
+    
+  recommendation-service:
+    host: recommendation-service.internal
+    port: 50056
+    protocol: grpc
+    
+  review-service:
+    host: review-service.internal
+    port: 50057
+    protocol: grpc
+    
+  seller-service:
+    host: seller-service.internal
+    port: 50058
+    protocol: grpc
+    
+  analytics-service:
+    host: analytics-service.internal
+    port: 50059
+    protocol: grpc

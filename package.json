@@ -1,0 +1,66 @@
+{
+  "name": "ec-recommend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ECレコメンドシステム - モノレポルート",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:frontend": "turbo run dev --filter=\"./frontend/**\"",
+    "dev:backend": "turbo run dev --filter=\"./backend/**\"",
+    "dev:user": "turbo run dev --filter=user",
+    "dev:seller": "turbo run dev --filter=seller",
+    "dev:admin": "turbo run dev --filter=admin",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "setup": "node scripts/setup.js && turbo run setup",
+    "setup:env": "node scripts/setup-env.js",
+    "db:start": "docker-compose -f infrastructure/docker/compose/docker-compose.yml up -d postgres redis opensearch",
+    "db:stop": "docker-compose -f infrastructure/docker/compose/docker-compose.yml stop",
+    "db:migrate": "turbo run db:migrate --filter=database-tools",
+    "db:seed": "turbo run db:seed --filter=database-tools",
+    "db:reset": "pnpm db:stop && docker-compose -f infrastructure/docker/compose/docker-compose.yml down -v && pnpm db:start && sleep 5 && pnpm db:migrate && pnpm db:seed",
+    "proto": "turbo run proto --filter=\"./backend/**\"",
+    "storybook": "turbo run storybook --filter=ui",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "update-deps": "pnpm update -r",
+    "docker:up": "docker-compose -f infrastructure/docker/compose/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f infrastructure/docker/compose/docker-compose.yml down",
+    "docker:logs": "docker-compose -f infrastructure/docker/compose/docker-compose.yml logs -f"
+  },
+  "devDependencies": {
+    "turbo": "^1.11.3",
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.14.0",
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.go": [
+      "gofmt -w",
+      "golangci-lint run"
+    ]
+  }
+}

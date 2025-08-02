@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package ecommerce.user;
+option go_package = "github.com/ec-recommend/backend/shared/go/proto/user";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+service UserService {
+  // ユーザー情報取得
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  
+  // ユーザー作成
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  
+  // ユーザー更新
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  
+  // ユーザープロファイル取得
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse);
+  
+  // ユーザープロファイル更新
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
+  
+  // アドレス一覧取得
+  rpc ListAddresses(ListAddressesRequest) returns (ListAddressesResponse);
+  
+  // アドレス追加
+  rpc AddAddress(AddAddressRequest) returns (AddAddressResponse);
+  
+  // アドレス更新
+  rpc UpdateAddress(UpdateAddressRequest) returns (UpdateAddressResponse);
+  
+  // アドレス削除
+  rpc DeleteAddress(DeleteAddressRequest) returns (DeleteAddressResponse);
+}
+
+// ユーザー情報
+message User {
+  string id = 1;
+  string cognito_user_id = 2;
+  string email = 3;
+  string phone_number = 4;
+  bool email_verified = 5;
+  string status = 6; // active, inactive, suspended, banned
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// ユーザープロファイル
+message UserProfile {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+  string birth_date = 4; // YYYY-MM-DD format
+  string gender = 5;
+  map<string, string> preferences = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+// アドレス情報
+message Address {
+  string id = 1;
+  string user_id = 2;
+  string postal_code = 3;
+  string prefecture = 4;
+  string city = 5;
+  string address_line1 = 6;
+  string address_line2 = 7;
+  string phone_number = 8;
+  bool is_default = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// リクエスト/レスポンス定義
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+  common.Error error = 2;
+}
+
+message CreateUserRequest {
+  string cognito_user_id = 1;
+  string email = 2;
+  string phone_number = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+  common.Error error = 2;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  string phone_number = 2;
+  string status = 3;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+  common.Error error = 2;
+}
+
+message GetUserProfileRequest {
+  string user_id = 1;
+}
+
+message GetUserProfileResponse {
+  UserProfile profile = 1;
+  common.Error error = 2;
+}
+
+message UpdateUserProfileRequest {
+  string user_id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+  string birth_date = 4;
+  string gender = 5;
+  map<string, string> preferences = 6;
+}
+
+message UpdateUserProfileResponse {
+  UserProfile profile = 1;
+  common.Error error = 2;
+}
+
+message ListAddressesRequest {
+  string user_id = 1;
+}
+
+message ListAddressesResponse {
+  repeated Address addresses = 1;
+  common.Error error = 2;
+}
+
+message AddAddressRequest {
+  string user_id = 1;
+  string postal_code = 2;
+  string prefecture = 3;
+  string city = 4;
+  string address_line1 = 5;
+  string address_line2 = 6;
+  string phone_number = 7;
+  bool is_default = 8;
+}
+
+message AddAddressResponse {
+  Address address = 1;
+  common.Error error = 2;
+}
+
+message UpdateAddressRequest {
+  string address_id = 1;
+  string postal_code = 2;
+  string prefecture = 3;
+  string city = 4;
+  string address_line1 = 5;
+  string address_line2 = 6;
+  string phone_number = 7;
+  bool is_default = 8;
+}
+
+message UpdateAddressResponse {
+  Address address = 1;
+  common.Error error = 2;
+}
+
+message DeleteAddressRequest {
+  string address_id = 1;
+}
+
+message DeleteAddressResponse {
+  bool success = 1;
+  common.Error error = 2;
+}

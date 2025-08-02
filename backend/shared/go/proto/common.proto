@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package ecommerce.common;
+option go_package = "github.com/ec-recommend/backend/shared/go/proto/common";
+
+import "google/protobuf/timestamp.proto";
+
+// 共通のページネーションリクエスト
+message PageRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string sort_by = 3;
+  bool descending = 4;
+}
+
+// 共通のページネーションレスポンス
+message PageResponse {
+  int32 total_items = 1;
+  int32 total_pages = 2;
+  int32 current_page = 3;
+  int32 page_size = 4;
+}
+
+// 金額表現
+message Money {
+  int64 amount = 1; // 最小単位（円）
+  string currency = 2; // 通貨コード (JPY, USD, etc.)
+}
+
+// エラー情報
+message Error {
+  string code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+}
+
+// メタデータ
+message Metadata {
+  string trace_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  map<string, string> extra = 4;
+}

@@ -1,0 +1,209 @@
+syntax = "proto3";
+
+package ecommerce.order;
+option go_package = "github.com/ec-recommend/backend/shared/go/proto/order";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+service OrderService {
+  // 注文作成
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  
+  // 注文取得
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  
+  // 注文一覧取得
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  
+  // 注文ステータス更新
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (UpdateOrderStatusResponse);
+  
+  // 支払い処理
+  rpc ProcessPayment(ProcessPaymentRequest) returns (ProcessPaymentResponse);
+  
+  // 注文キャンセル
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+  
+  // 返金処理
+  rpc RefundOrder(RefundOrderRequest) returns (RefundOrderResponse);
+  
+  // 販売者の注文一覧取得
+  rpc ListSellerOrders(ListSellerOrdersRequest) returns (ListSellerOrdersResponse);
+}
+
+// 注文情報
+message Order {
+  string id = 1;
+  string order_number = 2;
+  string user_id = 3;
+  ShippingAddress shipping_address = 4;
+  repeated OrderItem items = 5;
+  common.Money subtotal = 6;
+  common.Money tax_amount = 7;
+  common.Money shipping_fee = 8;
+  common.Money total_amount = 9;
+  string status = 10; // pending, processing, shipped, delivered, cancelled, refunded
+  PaymentInfo payment_info = 11;
+  repeated OrderStatusHistory status_history = 12;
+  google.protobuf.Timestamp ordered_at = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+// 注文アイテム
+message OrderItem {
+  string id = 1;
+  string product_id = 2;
+  string product_variation_id = 3;
+  string seller_id = 4;
+  string product_name = 5;
+  string product_sku = 6;
+  int32 quantity = 7;
+  common.Money unit_price = 8;
+  common.Money total_price = 9;
+  string fulfillment_status = 10;
+  map<string, string> metadata = 11;
+}
+
+// 配送先住所
+message ShippingAddress {
+  string postal_code = 1;
+  string prefecture = 2;
+  string city = 3;
+  string address_line1 = 4;
+  string address_line2 = 5;
+  string phone_number = 6;
+  string recipient_name = 7;
+}
+
+// 支払い情報
+message PaymentInfo {
+  string payment_method = 1; // credit_card, bank_transfer, etc.
+  string stripe_payment_intent_id = 2;
+  string status = 3;
+  google.protobuf.Timestamp paid_at = 4;
+  map<string, string> payment_details = 5;
+}
+
+// 注文ステータス履歴
+message OrderStatusHistory {
+  string status = 1;
+  string note = 2;
+  string changed_by = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// リクエスト/レスポンス定義
+message CreateOrderRequest {
+  string user_id = 1;
+  string shipping_address_id = 2;
+  repeated OrderItemInput items = 3;
+  string payment_method = 4;
+}
+
+message OrderItemInput {
+  string product_id = 1;
+  string product_variation_id = 2;
+  int32 quantity = 3;
+}
+
+message CreateOrderResponse {
+  Order order = 1;
+  string payment_client_secret = 2; // Stripe用
+  common.Error error = 3;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+  string order_number = 2;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+  common.Error error = 2;
+}
+
+message ListOrdersRequest {
+  string user_id = 1;
+  common.PageRequest pagination = 2;
+  OrderFilter filter = 3;
+}
+
+message OrderFilter {
+  repeated string statuses = 1;
+  google.protobuf.Timestamp from_date = 2;
+  google.protobuf.Timestamp to_date = 3;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  common.PageResponse pagination = 2;
+  common.Error error = 3;
+}
+
+message UpdateOrderStatusRequest {
+  string order_id = 1;
+  string status = 2;
+  string note = 3;
+}
+
+message UpdateOrderStatusResponse {
+  Order order = 1;
+  common.Error error = 2;
+}
+
+message ProcessPaymentRequest {
+  string order_id = 1;
+  string payment_method_id = 2;
+  map<string, string> payment_details = 3;
+}
+
+message ProcessPaymentResponse {
+  bool success = 1;
+  Order order = 2;
+  common.Error error = 3;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+  string reason = 2;
+}
+
+message CancelOrderResponse {
+  Order order = 1;
+  common.Error error = 2;
+}
+
+message RefundOrderRequest {
+  string order_id = 1;
+  common.Money refund_amount = 2;
+  string reason = 3;
+}
+
+message RefundOrderResponse {
+  Order order = 1;
+  string refund_id = 2;
+  common.Error error = 3;
+}
+
+message ListSellerOrdersRequest {
+  string seller_id = 1;
+  common.PageRequest pagination = 2;
+  OrderFilter filter = 3;
+}
+
+message ListSellerOrdersResponse {
+  repeated SellerOrder orders = 1;
+  common.PageResponse pagination = 2;
+  common.Error error = 3;
+}
+
+message SellerOrder {
+  string order_id = 1;
+  string order_number = 2;
+  repeated OrderItem items = 3; // このセラーの商品のみ
+  common.Money total_amount = 4;
+  string status = 5;
+  google.protobuf.Timestamp ordered_at = 6;
+}

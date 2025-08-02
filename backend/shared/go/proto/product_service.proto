@@ -1,0 +1,238 @@
+syntax = "proto3";
+
+package ecommerce.product;
+option go_package = "github.com/ec-recommend/backend/shared/go/proto/product";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+service ProductService {
+  // 商品取得
+  rpc GetProduct(GetProductRequest) returns (GetProductResponse);
+  
+  // 商品一覧取得
+  rpc ListProducts(ListProductsRequest) returns (ListProductsResponse);
+  
+  // 商品作成
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  
+  // 商品更新
+  rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
+  
+  // 在庫更新
+  rpc UpdateStock(UpdateStockRequest) returns (UpdateStockResponse);
+  
+  // 在庫予約
+  rpc ReserveStock(ReserveStockRequest) returns (ReserveStockResponse);
+  
+  // 在庫予約解除
+  rpc ReleaseStock(ReleaseStockRequest) returns (ReleaseStockResponse);
+  
+  // カテゴリ一覧取得
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  
+  // 販売者の商品一覧取得
+  rpc ListSellerProducts(ListSellerProductsRequest) returns (ListSellerProductsResponse);
+}
+
+// 商品情報
+message Product {
+  string id = 1;
+  string seller_id = 2;
+  string category_id = 3;
+  string brand_id = 4;
+  string sku = 5;
+  string name = 6;
+  string description = 7;
+  common.Money base_price = 8;
+  common.Money sale_price = 9;
+  int32 stock_quantity = 10;
+  string status = 11; // draft, active, out_of_stock, discontinued
+  map<string, string> attributes = 12;
+  ShippingInfo shipping_info = 13;
+  repeated ProductImage images = 14;
+  repeated ProductVariation variations = 15;
+  google.protobuf.Timestamp published_at = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+// 商品画像
+message ProductImage {
+  string id = 1;
+  string image_url = 2;
+  string alt_text = 3;
+  int32 sort_order = 4;
+  bool is_primary = 5;
+}
+
+// 商品バリエーション
+message ProductVariation {
+  string id = 1;
+  string sku = 2;
+  string name = 3;
+  map<string, string> attributes = 4;
+  common.Money price_adjustment = 5;
+  int32 stock_quantity = 6;
+  bool is_active = 7;
+}
+
+// 配送情報
+message ShippingInfo {
+  int32 weight_grams = 1;
+  int32 length_cm = 2;
+  int32 width_cm = 3;
+  int32 height_cm = 4;
+  bool free_shipping = 5;
+  common.Money shipping_fee = 6;
+  repeated string shipping_methods = 7;
+}
+
+// カテゴリ情報
+message Category {
+  string id = 1;
+  string parent_id = 2;
+  string name = 3;
+  string slug = 4;
+  string icon_url = 5;
+  int32 sort_order = 6;
+  bool is_active = 7;
+  repeated Category children = 8;
+}
+
+// 在庫情報
+message StockInfo {
+  string product_id = 1;
+  string variation_id = 2;
+  int32 available_stock = 3;
+  int32 reserved_stock = 4;
+  int32 total_stock = 5;
+}
+
+// リクエスト/レスポンス定義
+message GetProductRequest {
+  string product_id = 1;
+  bool include_variations = 2;
+}
+
+message GetProductResponse {
+  Product product = 1;
+  common.Error error = 2;
+}
+
+message ListProductsRequest {
+  common.PageRequest pagination = 1;
+  ProductFilter filter = 2;
+}
+
+message ProductFilter {
+  repeated string category_ids = 1;
+  repeated string brand_ids = 2;
+  common.Money min_price = 3;
+  common.Money max_price = 4;
+  repeated string statuses = 5;
+  string search_query = 6;
+}
+
+message ListProductsResponse {
+  repeated Product products = 1;
+  common.PageResponse pagination = 2;
+  common.Error error = 3;
+}
+
+message CreateProductRequest {
+  string seller_id = 1;
+  string category_id = 2;
+  string brand_id = 3;
+  string sku = 4;
+  string name = 5;
+  string description = 6;
+  common.Money base_price = 7;
+  common.Money sale_price = 8;
+  int32 stock_quantity = 9;
+  map<string, string> attributes = 10;
+  ShippingInfo shipping_info = 11;
+  repeated string image_urls = 12;
+}
+
+message CreateProductResponse {
+  Product product = 1;
+  common.Error error = 2;
+}
+
+message UpdateProductRequest {
+  string product_id = 1;
+  string name = 2;
+  string description = 3;
+  common.Money base_price = 4;
+  common.Money sale_price = 5;
+  string status = 6;
+  map<string, string> attributes = 7;
+  ShippingInfo shipping_info = 8;
+}
+
+message UpdateProductResponse {
+  Product product = 1;
+  common.Error error = 2;
+}
+
+message UpdateStockRequest {
+  string product_id = 1;
+  string variation_id = 2;
+  int32 quantity = 3;
+  string operation = 4; // set, add, subtract
+}
+
+message UpdateStockResponse {
+  StockInfo stock_info = 1;
+  common.Error error = 2;
+}
+
+message ReserveStockRequest {
+  string product_id = 1;
+  string variation_id = 2;
+  int32 quantity = 3;
+  string reservation_id = 4;
+  int32 timeout_seconds = 5;
+}
+
+message ReserveStockResponse {
+  bool success = 1;
+  StockInfo stock_info = 2;
+  common.Error error = 3;
+}
+
+message ReleaseStockRequest {
+  string product_id = 1;
+  string variation_id = 2;
+  string reservation_id = 3;
+}
+
+message ReleaseStockResponse {
+  bool success = 1;
+  StockInfo stock_info = 2;
+  common.Error error = 3;
+}
+
+message ListCategoriesRequest {
+  string parent_id = 1;
+  bool include_children = 2;
+  bool active_only = 3;
+}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+  common.Error error = 2;
+}
+
+message ListSellerProductsRequest {
+  string seller_id = 1;
+  common.PageRequest pagination = 2;
+  repeated string statuses = 3;
+}
+
+message ListSellerProductsResponse {
+  repeated Product products = 1;
+  common.PageResponse pagination = 2;
+  common.Error error = 3;
+}
