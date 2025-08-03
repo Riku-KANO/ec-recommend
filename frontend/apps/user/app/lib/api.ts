@@ -1,4 +1,5 @@
 // API Client Configuration
+import { fetchAuthSession } from 'aws-amplify/auth';
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
@@ -52,9 +53,14 @@ export class ApiClient {
     return response.json();
   }
 
-  private getAuthToken(): string | null {
-    // TODO: Implement token retrieval from Cognito
-    return null;
+  private async getAuthToken(): Promise<string | null> {
+    try {
+      const { tokens } = await fetchAuthSession();
+      return tokens?.idToken?.toString() || null;
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+      return null;
+    }
   }
 
   async get<T>(endpoint: string): Promise<T> {
