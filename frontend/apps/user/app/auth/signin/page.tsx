@@ -1,6 +1,5 @@
 'use client';
 
-import { signIn } from 'aws-amplify/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -8,9 +7,11 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 
 export default function SignInPage() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,17 +23,8 @@ export default function SignInPage() {
     setIsLoading(true);
 
     try {
-      const { isSignedIn, nextStep } = await signIn({
-        username: email,
-        password,
-      });
-
-      if (isSignedIn) {
-        router.push('/');
-      } else {
-        // 追加の手順が必要な場合の処理
-        console.log('Next step:', nextStep);
-      }
+      await signIn(email, password);
+      router.push('/');
     } catch (err) {
       console.error('Sign in error:', err);
       setError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');

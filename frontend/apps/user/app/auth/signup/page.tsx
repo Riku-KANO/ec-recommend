@@ -1,6 +1,5 @@
 'use client';
 
-import { signUp, confirmSignUp, autoSignIn } from 'aws-amplify/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -8,9 +7,12 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { authApiClient } from '@/lib/auth/api';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [step, setStep] = useState<'signup' | 'verify'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,20 +33,8 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const { nextStep } = await signUp({
-        username: email,
-        password,
-        options: {
-          userAttributes: {
-            email,
-          },
-          autoSignIn: true,
-        },
-      });
-
-      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-        setStep('verify');
-      }
+      await signUp(email, password);
+      setStep('verify');
     } catch (err: any) {
       console.error('Sign up error:', err);
       setError(err.message || '登録に失敗しました');
@@ -59,19 +49,8 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const { nextStep } = await confirmSignUp({
-        username: email,
-        confirmationCode: verificationCode,
-      });
-
-      if (nextStep.signUpStep === 'COMPLETE_AUTO_SIGN_IN') {
-        const signInOutput = await autoSignIn();
-        if (signInOutput.isSignedIn) {
-          router.push('/');
-        }
-      } else if (nextStep.signUpStep === 'DONE') {
-        router.push('/auth/signin');
-      }
+      await authApiClient.confirmSignUp(email, verificationCode);
+      router.push('/auth/signin?message=アカウントが確認されました。ログインしてください。');
     } catch (err: any) {
       console.error('Verification error:', err);
       setError(err.message || '確認に失敗しました');

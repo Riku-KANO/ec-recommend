@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { apiClient } from '@/lib/api';
+import { authApiClient } from '@/lib/auth/api';
 import { PasskeyService } from '@/lib/auth/passkey';
 
 interface PasskeyRegistrationBeginResponse {
@@ -37,10 +37,7 @@ export function usePasskey() {
 
     try {
       // 1. サーバーから登録チャレンジを取得
-      const beginResponse = await apiClient.post<PasskeyRegistrationBeginResponse>(
-        '/auth/passkey/register/begin',
-        { userId, userName }
-      );
+      const beginResponse = await authApiClient.passkeyRegisterBegin(userId, userName);
 
       // 2. WebAuthnでパスキーを作成
       const credential = await passkeyService.createPasskey(
@@ -50,10 +47,7 @@ export function usePasskey() {
       );
 
       // 3. サーバーに登録を完了
-      await apiClient.post('/auth/passkey/register/complete', {
-        userId,
-        credential,
-      });
+      await authApiClient.passkeyRegisterComplete(userId, credential);
 
       return true;
     } catch (err) {
@@ -71,22 +65,22 @@ export function usePasskey() {
 
     try {
       // 1. サーバーから認証チャレンジを取得
-      const beginResponse = await apiClient.post<PasskeyAuthenticationBeginResponse>(
-        '/auth/passkey/authenticate/begin',
-        {}
-      );
+      const beginResponse = await authApiClient.passkeyAuthenticateBegin();
 
       // 2. WebAuthnで認証
       const credential = await passkeyService.authenticateWithPasskey(
-        beginResponse.challenge,
-        beginResponse.allowCredentials
+        beginResponse.challenge
       );
 
       // 3. サーバーで認証を完了
-      const authResponse = await apiClient.post<AuthenticationCompleteResponse>(
-        '/auth/passkey/authenticate/complete',
-        { credential }
-      );
+      const authResponse = await authApiClient.passkeyAuthenticateComplete(credential);
+
+      // トークンをローカルストレージとCookieに保存
+      localStorage.setItem('accessToken', authResponse.tokens.accessToken);
+      localStorage.setItem('idToken', authResponse.tokens.idToken);
+      
+      // Cookieにも保存（middlewareでアクセス可能）
+      document.cookie = `accessToken=${authResponse.tokens.accessToken}; path=/; max-age=${60 * 60 * 24 * 7}; secure; samesite=strict`;
 
       return authResponse;
     } catch (err) {
@@ -103,7 +97,8 @@ export function usePasskey() {
     setError(null);
 
     try {
-      await apiClient.delete(`/auth/passkey/${credentialId}`);
+      // TODO: パスキー削除APIを実装
+      console.log('Delete passkey:', credentialId);
       return true;
     } catch (err) {
       console.error('Passkey deletion error:', err);

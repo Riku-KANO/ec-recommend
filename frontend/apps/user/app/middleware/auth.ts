@@ -47,6 +47,12 @@ function isPublicPath(pathname: string): boolean {
 export async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 開発モードで認証をスキップする場合
+  const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH === 'true';
+  if (skipAuth) {
+    return NextResponse.next();
+  }
+
   // 公開パスは認証チェックをスキップ
   if (isPublicPath(pathname)) {
     return;
@@ -81,8 +87,8 @@ function getTokenFromRequest(request: NextRequest): string | null {
     return authHeader.substring(7);
   }
 
-  // Cookieから取得（フォールバック）
-  const tokenCookie = request.cookies.get('auth-token');
+  // Cookieから取得
+  const tokenCookie = request.cookies.get('accessToken');
   if (tokenCookie) {
     return tokenCookie.value;
   }
