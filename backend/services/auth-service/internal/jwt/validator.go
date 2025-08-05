@@ -3,9 +3,8 @@ package jwt
 import (
 	"context"
 	"crypto/rsa"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -48,7 +47,15 @@ func NewValidator(userPoolID, region, clientID string) (*Validator, error) {
 }
 
 func (v *Validator) loadJWKS() error {
-	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", v.region, v.userPoolID)
+	var jwksURL string
+	
+	// Check for Cognito endpoint environment variable (for mocks)
+	cognitoEndpoint := os.Getenv("COGNITO_ENDPOINT")
+	if cognitoEndpoint != "" {
+		jwksURL = fmt.Sprintf("%s/%s/.well-known/jwks.json", cognitoEndpoint, v.userPoolID)
+	} else {
+		jwksURL = fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", v.region, v.userPoolID)
+	}
 	
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

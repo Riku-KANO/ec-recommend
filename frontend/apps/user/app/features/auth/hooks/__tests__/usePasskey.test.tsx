@@ -50,7 +50,7 @@ describe('usePasskey', () => {
       vi.mocked(apiClient.post).mockResolvedValueOnce(mockChallenge);
       vi.mocked(apiClient.post).mockResolvedValueOnce({ success: true });
 
-      mockPasskeyService.createPasskey.mockResolvedValueOnce(mockCredential as any);
+      mockPasskeyService.createPasskey.mockResolvedValueOnce(mockCredential);
 
       const { result } = renderHook(() => usePasskey());
 
@@ -103,7 +103,7 @@ describe('usePasskey', () => {
       vi.mocked(apiClient.post).mockResolvedValueOnce(mockChallenge);
       vi.mocked(apiClient.post).mockResolvedValueOnce(mockAuthResponse);
 
-      mockPasskeyService.authenticateWithPasskey.mockResolvedValueOnce(mockCredential as any);
+      mockPasskeyService.authenticateWithPasskey.mockResolvedValueOnce(mockCredential);
 
       const { result } = renderHook(() => usePasskey());
 

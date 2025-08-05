@@ -39,7 +39,7 @@ describe('PasskeyService', () => {
         type: 'public-key',
       };
 
-      vi.mocked(startRegistration).mockResolvedValue(mockResponse as any);
+      vi.mocked(startRegistration).mockResolvedValue(mockResponse);
 
       const result = await passkeyService.createPasskey(
         mockChallenge,
@@ -97,7 +97,7 @@ describe('PasskeyService', () => {
         type: 'public-key',
       };
 
-      vi.mocked(startAuthentication).mockResolvedValue(mockResponse as any);
+      vi.mocked(startAuthentication).mockResolvedValue(mockResponse);
 
       const result = await passkeyService.authenticateWithPasskey(mockChallenge);
 
