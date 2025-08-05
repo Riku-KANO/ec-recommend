@@ -3,27 +3,6 @@ import { useState } from 'react';
 import { authApiClient } from '@/lib/auth/api';
 import { PasskeyService } from '@/lib/auth/passkey';
 
-interface PasskeyRegistrationBeginResponse {
-  challenge: string;
-  userId?: string;
-}
-
-interface PasskeyAuthenticationBeginResponse {
-  challenge: string;
-  allowCredentials?: Array<{ id: string; type: 'public-key' }>;
-}
-
-interface AuthenticationCompleteResponse {
-  user: {
-    id: string;
-    email: string;
-  };
-  tokens: {
-    idToken: string;
-    accessToken: string;
-  };
-}
-
 export function usePasskey() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

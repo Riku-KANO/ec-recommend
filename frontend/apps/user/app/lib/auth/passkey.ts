@@ -24,6 +24,9 @@ export class PasskeyService {
    * WebAuthnがサポートされているか確認
    */
   checkSupport(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
     return browserSupportsWebAuthn();
   }
 

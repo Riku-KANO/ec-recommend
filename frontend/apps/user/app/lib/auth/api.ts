@@ -104,8 +104,8 @@ class AuthApiClient {
     });
   }
 
-  async validateToken(token: string): Promise<{ valid: boolean; user: any }> {
-    return this.request<{ valid: boolean; user: any }>('/auth/validate', {
+  async validateToken(token: string): Promise<{ valid: boolean; user: unknown }> {
+    return this.request<{ valid: boolean; user: unknown }>('/auth/validate', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -135,7 +135,7 @@ class AuthApiClient {
     });
   }
 
-  async passkeyRegisterComplete(userId: string, credential: any): Promise<{ success: boolean }> {
+  async passkeyRegisterComplete(userId: string, credential: unknown): Promise<{ success: boolean }> {
     return this.request<{ success: boolean }>('/auth/passkey/register/complete', {
       method: 'POST',
       body: JSON.stringify({ userId, credential }),
@@ -149,7 +149,7 @@ class AuthApiClient {
     });
   }
 
-  async passkeyAuthenticateComplete(credential: any): Promise<{
+  async passkeyAuthenticateComplete(credential: unknown): Promise<{
     user: { id: string; email: string };
     tokens: { idToken: string; accessToken: string };
   }> {

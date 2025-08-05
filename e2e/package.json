@@ -1,0 +1,28 @@
+{
+  "name": "ec-recommend-e2e",
+  "version": "1.0.0",
+  "description": "E2E tests for EC Recommend application",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "docker:up": "docker-compose -f config/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f config/docker-compose.yml down",
+    "docker:clean": "docker-compose -f config/docker-compose.yml down -v",
+    "test:with-docker": "npm run docker:up && npx wait-on http://localhost:3000 http://localhost:8080 http://localhost:5000 -t 60000 && npm test ; npm run docker:down",
+    "docker:up:real": "docker-compose -f config/docker-compose-real.yml up -d",
+    "docker:down:real": "docker-compose -f config/docker-compose-real.yml down",
+    "docker:clean:real": "docker-compose -f config/docker-compose-real.yml down -v",
+    "test:with-real": "npm run docker:up:real && npx wait-on http://localhost:3000 http://localhost:8080 http://localhost:5000 -t 120000 && npm test ; npm run docker:down:real"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

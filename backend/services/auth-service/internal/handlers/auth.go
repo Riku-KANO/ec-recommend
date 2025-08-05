@@ -11,7 +11,10 @@ import (
 
 type AuthHandler struct {
 	cognitoClient *cognito.Client
-	jwtValidator  *jwt.Validator
+	jwtValidator  interface{
+		ValidateToken(string) (*jwt.Claims, error)
+		RefreshJWKS() error
+	}
 }
 
 type ErrorResponse struct {
@@ -35,9 +38,20 @@ func NewAuthHandler() (*AuthHandler, error) {
 		return nil, err
 	}
 
-	jwtValidator, err := jwt.NewValidator(userPoolID, region, clientID)
-	if err != nil {
-		return nil, err
+	// Use mock validator if COGNITO_ENDPOINT is set (indicating mock environment)
+	var jwtValidator interface{ 
+		ValidateToken(string) (*jwt.Claims, error)
+		RefreshJWKS() error
+	}
+	
+	if os.Getenv("COGNITO_ENDPOINT") != "" {
+		jwtValidator = jwt.NewMockValidator(userPoolID, region, clientID)
+	} else {
+		var err error
+		jwtValidator, err = jwt.NewValidator(userPoolID, region, clientID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &AuthHandler{

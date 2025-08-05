@@ -3,6 +3,7 @@ package cognito
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -43,7 +44,27 @@ type User struct {
 }
 
 func NewClient(userPoolID, clientID string) (*Client, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	var cfg aws.Config
+	var err error
+
+	// Check for custom endpoint (for mocks)
+	if endpoint := os.Getenv("COGNITO_ENDPOINT"); endpoint != "" {
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			if service == cognitoidentityprovider.ServiceID {
+				return aws.Endpoint{
+					URL: endpoint,
+				}, nil
+			}
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+		})
+
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithEndpointResolverWithOptions(customResolver),
+		)
+	} else {
+		cfg, err = config.LoadDefaultConfig(context.TODO())
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to load SDK config: %v", err)
 	}
