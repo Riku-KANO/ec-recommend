@@ -35,9 +35,9 @@ export default function SignUpPage() {
     try {
       await signUp(email, password);
       setStep('verify');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Sign up error:', err);
-      setError(err.message || '登録に失敗しました');
+      setError(err instanceof Error ? err.message : '登録に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -51,9 +51,9 @@ export default function SignUpPage() {
     try {
       await authApiClient.confirmSignUp(email, verificationCode);
       router.push('/auth/signin?message=アカウントが確認されました。ログインしてください。');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Verification error:', err);
-      setError(err.message || '確認に失敗しました');
+      setError(err instanceof Error ? err.message : '確認に失敗しました');
     } finally {
       setIsLoading(false);
     }
