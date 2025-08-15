@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/ec-recommend/user-service/proto/user/v1;userv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// User Service
+service UserService {
+  // User operations
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
+  rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  
+  // Preferences operations
+  rpc GetUserPreferences(GetUserPreferencesRequest) returns (GetUserPreferencesResponse);
+  rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (google.protobuf.Empty);
+  
+  // Address operations
+  rpc CreateAddress(CreateAddressRequest) returns (CreateAddressResponse);
+  rpc GetAddress(GetAddressRequest) returns (GetAddressResponse);
+  rpc GetUserAddresses(GetUserAddressesRequest) returns (GetUserAddressesResponse);
+  rpc UpdateAddress(UpdateAddressRequest) returns (google.protobuf.Empty);
+  rpc DeleteAddress(DeleteAddressRequest) returns (google.protobuf.Empty);
+}
+
+// User model
+message User {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+  string display_name = 4;
+  string profile_picture = 5;
+  string bio = 6;
+  string phone_number = 7;
+  string date_of_birth = 8;
+  string gender = 9;
+  string language = 10;
+  string country = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+  google.protobuf.Timestamp last_login_at = 14;
+  bool is_active = 15;
+  bool is_verified = 16;
+}
+
+// UserPreferences model
+message UserPreferences {
+  string user_id = 1;
+  bool email_notifications = 2;
+  bool push_notifications = 3;
+  bool newsletter_subscribed = 4;
+  repeated string preferred_categories = 5;
+  string currency = 6;
+  string theme = 7;
+}
+
+// Address model
+message Address {
+  string address_id = 1;
+  string user_id = 2;
+  string type = 3; // billing or shipping
+  bool is_default = 4;
+  string recipient_name = 5;
+  string phone_number = 6;
+  string address_line1 = 7;
+  string address_line2 = 8;
+  string city = 9;
+  string state = 10;
+  string postal_code = 11;
+  string country = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+// Request/Response messages
+message CreateUserRequest {
+  string email = 1;
+  string username = 2;
+  string display_name = 3;
+  string language = 4;
+  string user_id = 5; // Optional, for Cognito integration
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetCurrentUserRequest {
+  string user_id = 1; // From context/auth header
+}
+
+message GetCurrentUserResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  UpdateUserFields fields = 2;
+}
+
+message UpdateUserFields {
+  optional string display_name = 1;
+  optional string bio = 2;
+  optional string profile_picture = 3;
+  optional string phone_number = 4;
+  optional string date_of_birth = 5;
+  optional string gender = 6;
+  optional string language = 7;
+  optional string country = 8;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+message GetUserByEmailResponse {
+  User user = 1;
+}
+
+message GetUserPreferencesRequest {
+  string user_id = 1;
+}
+
+message GetUserPreferencesResponse {
+  UserPreferences preferences = 1;
+}
+
+message UpdateUserPreferencesRequest {
+  string user_id = 1;
+  UserPreferences preferences = 2;
+}
+
+message CreateAddressRequest {
+  string user_id = 1;
+  string type = 2;
+  bool is_default = 3;
+  string recipient_name = 4;
+  string phone_number = 5;
+  string address_line1 = 6;
+  string address_line2 = 7;
+  string city = 8;
+  string state = 9;
+  string postal_code = 10;
+  string country = 11;
+}
+
+message CreateAddressResponse {
+  Address address = 1;
+}
+
+message GetAddressRequest {
+  string address_id = 1;
+}
+
+message GetAddressResponse {
+  Address address = 1;
+}
+
+message GetUserAddressesRequest {
+  string user_id = 1;
+}
+
+message GetUserAddressesResponse {
+  repeated Address addresses = 1;
+}
+
+message UpdateAddressRequest {
+  string user_id = 1;
+  string address_id = 2;
+  UpdateAddressFields fields = 3;
+}
+
+message UpdateAddressFields {
+  optional string type = 1;
+  optional bool is_default = 2;
+  optional string recipient_name = 3;
+  optional string phone_number = 4;
+  optional string address_line1 = 5;
+  optional string address_line2 = 6;
+  optional string city = 7;
+  optional string state = 8;
+  optional string postal_code = 9;
+  optional string country = 10;
+}
+
+message DeleteAddressRequest {
+  string user_id = 1;
+  string address_id = 2;
+}

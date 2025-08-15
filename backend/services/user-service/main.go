@@ -2,32 +2,49 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"github.com/ec-recommend/user-service/internal/handlers"
+	grpcserver "github.com/ec-recommend/user-service/internal/grpc"
 	"github.com/ec-recommend/user-service/internal/repository"
 	"github.com/ec-recommend/user-service/internal/service"
+	userv1 "github.com/ec-recommend/user-service/proto/user/v1"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
+	// Initialize logger
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+
+	// Load AWS config
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion("ap-northeast-1"),
 	)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		logger.Fatal("Unable to load SDK config", zap.Error(err))
 	}
 	
+	// Initialize DynamoDB client
 	dynamoClient := dynamodb.NewFromConfig(cfg)
 	
+	// Get table names from environment variables
 	userTable := os.Getenv("USER_TABLE_NAME")
 	if userTable == "" {
 		userTable = "ec-recommend-users"
@@ -43,71 +60,56 @@ func main() {
 		addressTable = "ec-recommend-user-addresses"
 	}
 	
+	// Initialize repository
 	userRepo := repository.NewUserRepository(dynamoClient, userTable, prefsTable, addressTable)
+	
+	// Initialize service
 	userService := service.NewUserService(userRepo)
-	userHandler := handlers.NewUserHandler(userService)
 	
-	r := gin.Default()
+	// Initialize gRPC server
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_zap.UnaryServerInterceptor(logger),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
+	)
 	
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-ID"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:          12 * time.Hour,
-	}))
+	// Register user service
+	userServiceServer := grpcserver.NewUserServiceServer(userService)
+	userv1.RegisterUserServiceServer(grpcServer, userServiceServer)
 	
-	api := r.Group("/api/v1")
-	{
-		api.POST("/users", userHandler.CreateUser)
-		api.GET("/users/me", userHandler.GetCurrentUser)
-		api.GET("/users/:userId", userHandler.GetUser)
-		api.PUT("/users/:userId", userHandler.UpdateUser)
-		api.DELETE("/users/:userId", userHandler.DeleteUser)
-		
-		api.GET("/users/:userId/preferences", userHandler.GetUserPreferences)
-		api.PUT("/users/:userId/preferences", userHandler.UpdateUserPreferences)
-		
-		api.POST("/users/:userId/addresses", userHandler.CreateAddress)
-		api.GET("/users/:userId/addresses", userHandler.GetUserAddresses)
-		api.PUT("/users/:userId/addresses/:addressId", userHandler.UpdateAddress)
-		api.DELETE("/users/:userId/addresses/:addressId", userHandler.DeleteAddress)
-	}
+	// Register health service
+	healthServer := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 	
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	// Register reflection service for debugging
+	reflection.Register(grpcServer)
 	
+	// Get port from environment
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8082"
+		port = "50051"
 	}
 	
-	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+	// Start listening
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	if err != nil {
+		logger.Fatal("Failed to listen", zap.Error(err), zap.String("port", port))
 	}
 	
+	// Handle graceful shutdown
 	go func() {
-		log.Printf("Starting User Service on port %s", port)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		<-sigChan
+		
+		logger.Info("Shutting down gRPC server...")
+		grpcServer.GracefulStop()
 	}()
 	
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	
-	log.Println("Shutting down server...")
-	
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
+	logger.Info("Starting User Service gRPC server", zap.String("port", port))
+	if err := grpcServer.Serve(lis); err != nil {
+		logger.Fatal("Failed to serve", zap.Error(err))
 	}
-	
-	log.Println("Server exiting")
 }

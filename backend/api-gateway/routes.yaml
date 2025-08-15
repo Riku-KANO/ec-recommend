@@ -54,49 +54,67 @@ routes:
     description: "トークンリフレッシュ"
 
   # ユーザー管理
+  - path: /users
+    method: POST
+    service: user-service
+    auth_required: false
+    description: "新規ユーザー作成"
+    
   - path: /users/me
     method: GET
     service: user-service
     auth_required: true
     description: "現在のユーザー情報取得"
     
-  - path: /users/me
+  - path: /users/{user_id}
+    method: GET
+    service: user-service
+    auth_required: true
+    description: "ユーザー情報取得"
+    
+  - path: /users/{user_id}
     method: PUT
     service: user-service
     auth_required: true
     description: "ユーザー情報更新"
     
-  - path: /users/me/profile
+  - path: /users/{user_id}
+    method: DELETE
+    service: user-service
+    auth_required: true
+    description: "ユーザー削除"
+    
+  - path: /users/{user_id}/preferences
     method: GET
     service: user-service
     auth_required: true
-    description: "ユーザープロファイル取得"
+    description: "ユーザー設定取得"
     
-  - path: /users/me/profile
+  - path: /users/{user_id}/preferences
     method: PUT
     service: user-service
     auth_required: true
-    description: "ユーザープロファイル更新"
+    description: "ユーザー設定更新"
     
-  - path: /users/me/addresses
+  - path: /users/{user_id}/addresses
     method: GET
     service: user-service
     auth_required: true
     description: "アドレス一覧取得"
     
-  - path: /users/me/addresses
+  - path: /users/{user_id}/addresses
     method: POST
     service: user-service
     auth_required: true
     description: "アドレス追加"
     
-  - path: /users/me/addresses/{address_id}
+  - path: /users/{user_id}/addresses/{address_id}
     method: PUT
     service: user-service
     auth_required: true
     description: "アドレス更新"
     
-  - path: /users/me/addresses/{address_id}
+  - path: /users/{user_id}/addresses/{address_id}
     method: DELETE
     service: user-service
     auth_required: true
