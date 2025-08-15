@@ -1,0 +1,67 @@
+# DynamoDB Tables for User Service
+
+Tables:
+  # ユーザー情報テーブル
+  - TableName: ec-recommend-users
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      - AttributeName: email
+        AttributeType: S
+    KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: email-index
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    StreamSpecification:
+      StreamViewType: NEW_AND_OLD_IMAGES
+    Tags:
+      - Key: Service
+        Value: user-service
+      - Key: Environment
+        Value: production
+
+  # ユーザー設定テーブル
+  - TableName: ec-recommend-user-preferences
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+    Tags:
+      - Key: Service
+        Value: user-service
+      - Key: Environment
+        Value: production
+
+  # ユーザー住所テーブル
+  - TableName: ec-recommend-user-addresses
+    BillingMode: PAY_PER_REQUEST
+    AttributeDefinitions:
+      - AttributeName: addressId
+        AttributeType: S
+      - AttributeName: userId
+        AttributeType: S
+    KeySchema:
+      - AttributeName: addressId
+        KeyType: HASH
+    GlobalSecondaryIndexes:
+      - IndexName: userId-index
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+    Tags:
+      - Key: Service
+        Value: user-service
+      - Key: Environment
+        Value: production
